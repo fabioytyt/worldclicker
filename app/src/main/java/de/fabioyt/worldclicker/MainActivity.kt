@@ -1,36 +1,82 @@
 package de.fabioyt.worldclicker
 
 import android.annotation.SuppressLint
-import android.graphics.Color
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.OnLifecycleEvent
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import de.fabioyt.worldclicker.ui.theme.WorldclickerTheme
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.BoundingBox
+import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polygon
+import java.io.IOException
 import kotlin.random.Random
 
+
+
 class MainActivity : ComponentActivity() {
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    private var latitude: Double = 0.0
+    private var longitude: Double = 0.0
+
+    @SuppressLint("MissingPermission")
+    private fun obtieneLocalizacion(){
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location: Location? ->
+                println("FAB.IO_YT")
+                latitude =  location?.latitude ?: 0.0
+                longitude = location?.longitude ?: 0.0
+                println("MOIN")
+                println("lat: OIN$latitude long: $longitude")
+            }
+    }
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
+        Configuration.getInstance().userAgentValue = applicationContext.packageName;
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        obtieneLocalizacion()
+
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            } else {
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1);
+            }
+        }
+
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
         setContent {
             WorldclickerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -44,6 +90,7 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+
 fun createMarker(lat:Double, lng:Double, map: MapView, icon:Int) {
     val firstMarker = Marker(map)
     firstMarker.position = GeoPoint(lat, lng)
@@ -53,6 +100,7 @@ fun createMarker(lat:Double, lng:Double, map: MapView, icon:Int) {
 // "Invalidating" the map displays the marker as soon as it has been added.
     map.invalidate()
 }
+@RequiresApi(Build.VERSION_CODES.Q)
 fun generateRandomCars(map: MapView, currentPos: GeoPoint) {
     repeat(25) {
 
@@ -65,6 +113,8 @@ fun generateRandomCars(map: MapView, currentPos: GeoPoint) {
     }
 }
 
+
+@RequiresApi(Build.VERSION_CODES.Q)
 fun addCircle(map:MapView, lat:Double, lng:Double, distance:Int) {
     val oPolygon = Polygon(map)
     val radius: Double = distance.toDouble()
@@ -73,11 +123,14 @@ fun addCircle(map:MapView, lat:Double, lng:Double, distance:Int) {
         circlePoints.add(GeoPoint(lat, lng).destinationPoint(radius, f.toDouble()))
     }
     oPolygon.points = circlePoints
-    oPolygon.fillPaint.color = Color.RED
+    oPolygon.fillPaint.color = Color(47, 128, 223, 100).toArgb()
+    oPolygon.outlinePaint.color = Color(47, 128, 223, 255).toArgb()
+    // println(oPolygon.outlinePaint.setColor(0xFFFFFF))
 
     map.overlays.add(oPolygon)
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
@@ -89,16 +142,13 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         factory = { context ->
             // Creates the view
             MapView(context).apply {
-                 this.minZoomLevel = 4.0
-                // Do anything that needs to happen on the view init here
-                // For example set the tile source or add a click listener
-                setTileSource(TileSourceFactory.USGS_TOPO)
                 setOnClickListener {
                     println("moin hier ist der fab.io_yt")
                 }
                 createMarker(49.15, 12.10, this, R.mipmap.ic_man_marker_foreground)
-                addCircle(this, 49.15, 12.10, 1200)
                 var currentPos:GeoPoint =GeoPoint(49.15, 12.10)
+                setBuiltInZoomControls(false);
+                setMultiTouchControls(true);
                 generateRandomCars(this, currentPos)
                 //scrollTo(49, 12)
                 //zoomToBoundingBox(BoundingBox(geoPoint.latitude + zoom, geoPoint.longitude + zoom,
@@ -118,6 +168,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
