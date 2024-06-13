@@ -1,16 +1,10 @@
 package de.fabioyt.worldclicker
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Address
-import android.location.Geocoder
 import android.location.Location
-import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,8 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.OnLifecycleEvent
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import de.fabioyt.worldclicker.ui.theme.WorldclickerTheme
@@ -39,9 +31,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polygon
-import java.io.IOException
 import kotlin.random.Random
-
 
 
 class MainActivity : ComponentActivity() {
@@ -50,9 +40,9 @@ class MainActivity : ComponentActivity() {
 
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
-
+    
     @SuppressLint("MissingPermission")
-    private fun obtieneLocalizacion(){
+    fun obtieneLocalizacion(){
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location: Location? ->
                 println("FAB.IO_YT")
@@ -60,22 +50,27 @@ class MainActivity : ComponentActivity() {
                 longitude = location?.longitude ?: 0.0
                 println("MOIN")
                 println("lat: OIN$latitude long: $longitude")
+
+                Toast.makeText(this,"$latitude and $longitude", Toast.LENGTH_LONG).show()
+
             }
     }
+
+
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         Configuration.getInstance().userAgentValue = applicationContext.packageName;
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        obtieneLocalizacion()
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            } else {
-                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1);
-            }
+
+        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+        } else {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1);
         }
 
         super.onCreate(savedInstanceState)
+       // Toast.makeText(this, "Moin", Toast.LENGTH_LONG).show()
+
 
         setContent {
             WorldclickerTheme {
@@ -89,9 +84,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    companion object {
+
+    }
+
 }
 
-fun createMarker(lat:Double, lng:Double, map: MapView, icon:Int) {
+fun createMarker(lat:Double, lng:Double, map: MapView, icon:Int):Marker {
     val firstMarker = Marker(map)
     firstMarker.position = GeoPoint(lat, lng)
     firstMarker.icon = ContextCompat.getDrawable(map.context, icon)
@@ -99,13 +98,15 @@ fun createMarker(lat:Double, lng:Double, map: MapView, icon:Int) {
     map.overlays.add(firstMarker)
 // "Invalidating" the map displays the marker as soon as it has been added.
     map.invalidate()
+
+    return firstMarker
 }
 @RequiresApi(Build.VERSION_CODES.Q)
 fun generateRandomCars(map: MapView, currentPos: GeoPoint) {
     repeat(25) {
 
-   var newLat:Double = Random.nextDouble(currentPos.latitude-0.05, currentPos.latitude+0.05)
-    var newLng:Double = Random.nextDouble(currentPos.longitude-0.05, currentPos.longitude+0.05)
+    val newLat:Double = Random.nextDouble(currentPos.latitude-0.05, currentPos.latitude+0.05)
+    val newLng:Double = Random.nextDouble(currentPos.longitude-0.05, currentPos.longitude+0.05)
 
     addCircle(map, newLat, newLng, 50 )
     createMarker(newLat, newLng, map, R.mipmap.ic_car_marker_foreground)
@@ -150,10 +151,16 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
                 setBuiltInZoomControls(false);
                 setMultiTouchControls(true);
                 generateRandomCars(this, currentPos)
+                //obtieneLocalizacion(this,R.mipmap.ic_man_marker_foreground )
                 //scrollTo(49, 12)
                 //zoomToBoundingBox(BoundingBox(geoPoint.latitude + zoom, geoPoint.longitude + zoom,
                   //  geoPoint.latitude - zoom, geoPoint.longitude - zoom), true)
                 controller.setCenter(geoPoint)
+                val mActivity = MainActivity()
+
+
+
+
 
                 controller.animateTo(geoPoint, 13.50000000, 1000)
                 //controller.zoomTo(10.0, 1000)
